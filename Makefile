@@ -1,7 +1,7 @@
 app=ext-undelete
 
 OBJ=main.o
-OPT=-O2
+CFLAGS=-O2
 CC=gcc
 
 .PHONY: build
@@ -13,7 +13,7 @@ clean:
 	rm -f *.o ${app}
 
 ${app}: ${OBJ}
-	${CC} ${OBJ} -o ${app} ${OPT}
+	${CC} ${CFLAGS} ${OBJ} -o ${app} ${CGLAGS}
 
-main.o: main.c
-	${CC} main.c -c ${OPT}
+main.o: main.c main.h
+	${CC} ${CFLAGS} -c main.c
