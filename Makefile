@@ -1,7 +1,7 @@
 app=ext-undelete
 
 OBJ=main.o
-CFLAGS=-O2
+CFLAGS=-O2 -D_FILE_OFFSET_BITS=64
 CC=gcc
 
 .PHONY: build
@@ -15,5 +15,5 @@ clean:
 ${app}: ${OBJ}
 	${CC} ${CFLAGS} ${OBJ} -o ${app} ${CGLAGS}
 
-main.o: main.c main.h
+main.o: main.c main.h ext4.h 
 	${CC} ${CFLAGS} -c main.c
