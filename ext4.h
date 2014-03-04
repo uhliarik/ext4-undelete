@@ -89,4 +89,10 @@ struct ext4_inode {
 	__le32  i_version_hi;/* high 32 bits for 64-bit version */
 };
 
+/* data type for filesystem-wide blocks number */
+typedef unsigned long long ext4_fsblk_t;
+ 
+/* data type for file logical block number */
+typedef __u32 ext4_lblk_t;
+
 #endif

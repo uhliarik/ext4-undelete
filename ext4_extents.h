@@ -62,6 +62,10 @@ struct ext4_extent_header {
 	__le32	eh_generation;	/* generation of the tree */
 };
 
+struct block_buffer {
+        void    *data;
+};
+
 #define EXT4_EXT_MAGIC		cpu_to_le16(0xf30a)
 
 #define EXT4_EXTENT_TAIL_OFFSET(hdr) \
@@ -86,7 +90,7 @@ struct ext4_ext_path {
 	struct ext4_extent		*p_ext;
 	struct ext4_extent_idx		*p_idx;
 	struct ext4_extent_header	*p_hdr;
-	struct buffer_head		*p_bh;
+	struct block_buffer		*p_bb;
 };
 
 /*
@@ -124,9 +128,9 @@ struct ext4_ext_path {
 	(le16_to_cpu((__path__)->p_hdr->eh_entries) \
 				     < le16_to_cpu((__path__)->p_hdr->eh_max))
 #define EXT_LAST_EXTENT(__hdr__) \
-	(EXT_FIRST_EXTENT((__hdr__)) + le16_to_cpu((__hdr__)->eh_entries) - 1)
+	(EXT_FIRST_EXTENT((__hdr__)) + __le16_to_cpu((__hdr__)->eh_entries) - 1)
 #define EXT_LAST_INDEX(__hdr__) \
-	(EXT_FIRST_INDEX((__hdr__)) + le16_to_cpu((__hdr__)->eh_entries) - 1)
+	(EXT_FIRST_INDEX((__hdr__)) + __le16_to_cpu((__hdr__)->eh_entries) - 1)
 #define EXT_MAX_EXTENT(__hdr__) \
 	(EXT_FIRST_EXTENT((__hdr__)) + le16_to_cpu((__hdr__)->eh_max) - 1)
 #define EXT_MAX_INDEX(__hdr__) \
@@ -137,29 +141,28 @@ static inline struct ext4_extent_header *ext_inode_hdr(struct ext4_inode *inode)
 	return (struct ext4_extent_header *) inode->i_block;
 }
 
+static inline struct ext4_extent_header *ext_block_hdr(struct block_buffer *bb)
+{
+         return (struct ext4_extent_header *) bb->data;
+}
+
 static inline unsigned short ext_depth(struct ext4_inode *inode)
 {
 	return __le16_to_cpu(ext_inode_hdr(inode)->eh_depth);
 }
 
-static inline void ext4_ext_mark_uninitialized(struct ext4_extent *ext)
-{
-	/* We can not have an uninitialized extent of zero length! */
-	BUG_ON((le16_to_cpu(ext->ee_len) & ~EXT_INIT_MAX_LEN) == 0);
-	ext->ee_len |= cpu_to_le16(EXT_INIT_MAX_LEN);
-}
 
 static inline int ext4_ext_is_uninitialized(struct ext4_extent *ext)
 {
 	/* Extent with ee_len of 0x8000 is treated as an initialized extent */
-	return (le16_to_cpu(ext->ee_len) > EXT_INIT_MAX_LEN);
+	return (__le16_to_cpu(ext->ee_len) > EXT_INIT_MAX_LEN);
 }
 
 static inline int ext4_ext_get_actual_len(struct ext4_extent *ext)
 {
-	return (le16_to_cpu(ext->ee_len) <= EXT_INIT_MAX_LEN ?
-		le16_to_cpu(ext->ee_len) :
-		(le16_to_cpu(ext->ee_len) - EXT_INIT_MAX_LEN));
+	return (__le16_to_cpu(ext->ee_len) <= EXT_INIT_MAX_LEN ?
+		__le16_to_cpu(ext->ee_len) :
+		(__le16_to_cpu(ext->ee_len) - EXT_INIT_MAX_LEN));
 }
 
 static inline void ext4_ext_mark_initialized(struct ext4_extent *ext)
@@ -175,8 +178,8 @@ static inline ext4_fsblk_t ext4_ext_pblock(struct ext4_extent *ex)
 {
 	ext4_fsblk_t block;
 
-	block = le32_to_cpu(ex->ee_start_lo);
-	block |= ((ext4_fsblk_t) le16_to_cpu(ex->ee_start_hi) << 31) << 1;
+	block = __le32_to_cpu(ex->ee_start_lo);
+	block |= ((ext4_fsblk_t) __le16_to_cpu(ex->ee_start_hi) << 31) << 1;
 	return block;
 }
 
@@ -188,11 +191,25 @@ static inline ext4_fsblk_t ext4_idx_pblock(struct ext4_extent_idx *ix)
 {
 	ext4_fsblk_t block;
 
-	block = le32_to_cpu(ix->ei_leaf_lo);
-	block |= ((ext4_fsblk_t) le16_to_cpu(ix->ei_leaf_hi) << 31) << 1;
+	block = __le32_to_cpu(ix->ei_leaf_lo);
+	block |= ((ext4_fsblk_t) __le16_to_cpu(ix->ei_leaf_hi) << 31) << 1;
 	return block;
 }
 
+
+static inline __u16 ext4_ext_get_entries(struct ext4_extent_header *eh){
+        __u16 eh_entries = 0x0;
+        eh_entries |= __le16_to_cpu(eh->eh_generation);
+        
+        return eh_entries;
+}
+
+static inline __u16 ext4_ext_get_depth(struct ext4_extent_header *eh){
+        __u16 eh_depth = 0x0;
+        eh_depth |= __le16_to_cpu(eh->eh_generation >> 16);
+        
+        return eh_depth;
+}
 
 
 #endif /* _EXT4_EXTENTS */
