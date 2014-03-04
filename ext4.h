@@ -9,6 +9,10 @@
 /* data type for filesystem-wide blocks number */
 typedef unsigned long long ext4_fsblk_t;
 
+/* data type for file logical block number */
+typedef __u32 ext4_lblk_t;
+
+
 /*
  * Constants relative to the data blocks
  */
@@ -88,11 +92,5 @@ struct ext4_inode {
 	__le32  i_crtime_extra; /* extra FileCreationtime (nsec << 2 | epoch) */
 	__le32  i_version_hi;/* high 32 bits for 64-bit version */
 };
-
-/* data type for filesystem-wide blocks number */
-typedef unsigned long long ext4_fsblk_t;
- 
-/* data type for file logical block number */
-typedef __u32 ext4_lblk_t;
 
 #endif

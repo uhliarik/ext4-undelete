@@ -2,7 +2,7 @@ app=ext-undelete
 
 OBJ=main.o ext4_undelete.o
 DEBUG=-D DEBUG
-CFLAGS=-std=gnu99 -O2 -D_FILE_OFFSET_BITS=64 ${DEBUG}
+CFLAGS=-std=c99 -Wextra -Wall -Werror -pedantic -O2 -D_POSIX_C_SOURCE=200112L -D_FILE_OFFSET_BITS=64 ${DEBUG}
 CC=gcc
 
 .PHONY: build

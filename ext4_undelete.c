@@ -210,6 +210,8 @@ static int ext4_undelete_leaf(struct ext4_ext_path *path, int out_fd, int fd) {
         ex_ee_len = ext4_ext_get_actual_len(ex);
         pblk = ext4_ext_pblock(ex);
     }
+    
+    return 0;
 }
 
 static int open_out_file(char *output_name){
@@ -276,7 +278,10 @@ int ext4_undelete_file(char *device, off_t offset, char *output_name) {
             D(printf("Processing leaf node..\n"));
 
             err = ext4_undelete_leaf(path + i, out_fd, fd);
-
+            if (err < 0){
+                // ERROR
+            }
+            
             block_release(path[i].p_bb);
             path[i].p_bb = NULL;
             i--;
@@ -332,4 +337,6 @@ int ext4_undelete_file(char *device, off_t offset, char *output_name) {
     
     close(fd);
     close_out_file(out_fd);
+    
+    return 0;
 }
