@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <getopt.h>
 #include "main.h"
 #include "ext4_undelete.h"
 
