@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <ctype.h>
 #include "main.h"
 #include "ext4_undelete.h"
 
@@ -34,7 +35,7 @@ static struct options parse_options(int argc, char ** argv) {
                 return opts;
             case 'i':
                 // TODO: check value here
-                opts.inode_offset = atoi(optarg);
+                opts.inode_offset = atoll(optarg);
                 break;
             case 'o':
                 opts.output_name = optarg;

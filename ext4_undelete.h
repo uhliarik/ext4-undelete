@@ -11,7 +11,7 @@
 #include "ext4.h"
 #include "ext4_extents.h"
 
-int ext4_undelete_file(char *device, int offset, char *output_name);
+int ext4_undelete_file(char *device, off_t offset, char *output_name);
 void print_ext4_exhdr_info(struct ext4_extent_header *header);
 void print_ext4_inode_info(struct ext4_inode * inode);
 

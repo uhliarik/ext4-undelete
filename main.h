@@ -5,7 +5,7 @@
 
 struct options {
 	int state;
-	int inode_offset;
+	off_t inode_offset;
 	char * device;
 	char * output_name;
 };

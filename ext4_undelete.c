@@ -13,6 +13,7 @@
 #include <asm/byteorder.h>
 #include <fcntl.h>
 #include <string.h>
+#include <unistd.h>
 #include "ext4_undelete.h"
 #include "debug.h"
 
@@ -57,8 +58,8 @@ static struct block_buffer *read_block(char *device, ext4_fsblk_t pblk){
         return NULL;
     }
     
-    off64_t offset = pblk * EXT4_BLOCK_SIZE;
-    if (lseek64(fd, offset, SEEK_SET) < 0){
+    off_t offset = pblk * EXT4_BLOCK_SIZE;
+    if (lseek(fd, offset, SEEK_SET) < 0){
         close(fd);
         block_release(bb);
         fprintf(stderr, "Error: unable to seek in input device!\n");
@@ -103,7 +104,7 @@ void print_ext4_inode_info(struct ext4_inode * inode) {
     printf("size_high: %d\n", inode->i_size_high);
 }
 
-int ext4_read_inode(char *device, int offset, struct ext4_inode *inode) {
+int ext4_read_inode(char *device, off_t offset, struct ext4_inode *inode) {
     D(printf("Opening file: %s\n", device));
 
     int fd = open(device, O_RDONLY);
@@ -112,8 +113,9 @@ int ext4_read_inode(char *device, int offset, struct ext4_inode *inode) {
         return -1;
     }
 
+    D(printf("Seeking to position: %lld\n", offset));
     if (lseek(fd, offset, SEEK_SET) < 0) {
-        fprintf(stderr, "Error: can NOT set offset to %d\n", offset);
+        fprintf(stderr, "Error: can NOT set offset to %lld\n", offset);
         close(fd);
         return -1;
     }
@@ -134,19 +136,19 @@ static int append_undeleted_data(int fd, int out_fd, ext4_lblk_t ex_ee_block,
     
     D(printf("Entering append_undeleted_data function \n"));
     void * buffer;
-    off64_t offset = (off64_t)pblk * EXT4_BLOCK_SIZE;
-    if (lseek64(fd, offset, SEEK_SET) < 0) {
+    off_t offset = (off_t)pblk * EXT4_BLOCK_SIZE;
+    if (lseek(fd, offset, SEEK_SET) < 0) {
         fprintf(stderr, "Error: can NOT set offset to %lld\n", offset);
         return -1;
     }
     
-    off64_t out_offset = (off64_t)ex_ee_block * EXT4_BLOCK_SIZE; 
-    if(lseek64(out_fd, out_offset, SEEK_SET) < 0){
+    off_t out_offset = (off_t)ex_ee_block * EXT4_BLOCK_SIZE; 
+    if(lseek(out_fd, out_offset, SEEK_SET) < 0){
         fprintf(stderr, "Error: unable to seek to position: %lld", out_offset);
         return -1;
     }
     
-    off64_t bytes_to_transfer = ex_ee_len * EXT4_BLOCK_SIZE;
+    off_t bytes_to_transfer = ex_ee_len * EXT4_BLOCK_SIZE;
     buffer = (void *)malloc(EXT4_BLOCK_SIZE);
     if(buffer == NULL){
         fprintf(stderr, "Error: unable to allocate memory for buffer!");
@@ -154,7 +156,7 @@ static int append_undeleted_data(int fd, int out_fd, ext4_lblk_t ex_ee_block,
     }
     
     int bytes_read = 0, bytes_written = 0;
-    off64_t write_off = 0;
+    off_t write_off = 0;
     while(bytes_to_transfer){
         if((bytes_read = read(fd, (char *)buffer, EXT4_BLOCK_SIZE)) < 0){
             // ERROR
@@ -190,7 +192,7 @@ static int ext4_undelete_leaf(struct ext4_ext_path *path, int out_fd, int fd) {
     
     eh = path->p_hdr;
     print_ext4_exhdr_info(eh);
-
+    D(printf("Restoring eh_entries from eh_generation: %d\n", __le16_to_cpu(path->p_hdr->eh_entries)));
     
     ex = EXT_FIRST_EXTENT(eh);
     ex_ee_block = __le32_to_cpu(ex->ee_block);
@@ -199,7 +201,7 @@ static int ext4_undelete_leaf(struct ext4_ext_path *path, int out_fd, int fd) {
     
     // process all leafs
     while (ex <= EXT_LAST_EXTENT(eh)) {
-        D(printf("DATA: %d data extent starts at address: %lld, len: %d. Processing leaf node..\n", ex_ee_block, pblk, ex_ee_len));
+        D(printf("DATA: Extent starts at block: %lld (len: %d, first block's number: %d). Processing leaf node..\n",  pblk, ex_ee_len, ex_ee_block));
         
         append_undeleted_data(fd, out_fd, ex_ee_block, pblk, ex_ee_len);
         
@@ -223,7 +225,7 @@ static void close_out_file(int out_fd){
 
 // TODO: set offset to bigger data type (should be at least 48 bytes long...)
 
-int ext4_undelete_file(char *device, int offset, char *output_name) {
+int ext4_undelete_file(char *device, off_t offset, char *output_name) {
     struct ext4_inode inode;
     struct ext4_ext_path *path = NULL;
     int i = 0, err = 0;
@@ -325,6 +327,8 @@ int ext4_undelete_file(char *device, int offset, char *output_name) {
 
     if (path != NULL)
         free(path);
+    
+    D(printf("Closing files...\n"));
     
     close(fd);
     close_out_file(out_fd);
