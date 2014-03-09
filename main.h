@@ -1,17 +1,14 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
-
 #define DEFAULT_FILENAME "out.undeleted"
 
-#define _LARGEFILE_SOURCE
-#define _LARGEFILE64_SOURCE
-
-#include <sys/types.h>
+#include <ext2fs/ext2_fs.h>
+#include <ext2fs/ext2fs.h>
 
 struct options {
 	int state;
-	off_t inode_offset;
+	ext2_ino_t ino;
 	char * device;
 	char * output_name;
 };

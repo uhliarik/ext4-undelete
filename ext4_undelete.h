@@ -11,9 +11,13 @@
 #include "ext4.h"
 #include "ext4_extents.h"
 
-int ext4_undelete_file(char *device, off_t offset, char *output_name);
-void print_ext4_exhdr_info(struct ext4_extent_header *header);
-void print_ext4_inode_info(struct ext4_inode * inode);
+/** using ext2fs lib */
+#include <ext2fs/ext2_fs.h>
+#include <ext2fs/ext2fs.h>
+
+int undelete_file(char *device, ext2_ino_t ino, char *output_name);
+void print_ext2_exhdr_info(struct ext3_extent_header *header);
+void print_ext2_inode(struct ext2_inode * inode);
 
 #endif	/* EXT4_UNDELETE_H */
 

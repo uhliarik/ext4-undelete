@@ -10,10 +10,10 @@
 #define GETOPT_ARGS "hi:o:"
 
 static void print_help() {
-    printf("\nUsage: ./ext4_undel device -i inode_offset [OPTIONS]");
+    printf("\nUsage: ./ext4_undel device -i ino [OPTIONS]");
     printf("\n\nOptions:");
     printf("\n\t-h: print this help");
-    printf("\n\t-i inode_offset: specifies offset of inode, which holds info about file which should be undeleted");
+    printf("\n\t-i ino: specifies inode number, which holds info about file which should be undeleted");
     printf("\n\t-o filename: filename of undeleted file. Default is %s", DEFAULT_FILENAME);
     printf("\n");
 }
@@ -24,7 +24,7 @@ static struct options parse_options(int argc, char ** argv) {
 
     struct options opts = {
         .state = 0,
-        .inode_offset = -1,
+        .ino = 0,
         .output_name = DEFAULT_FILENAME,
         .device = NULL
     };
@@ -35,9 +35,8 @@ static struct options parse_options(int argc, char ** argv) {
                 print_help();
                 opts.state = -1;
                 return opts;
-            case 'i':
-                // TODO: check value here
-                opts.inode_offset = atoll(optarg);
+            case 'i':          
+                opts.ino = strtoul(optarg, NULL, 0);
                 break;
             case 'o':
                 opts.output_name = optarg;
@@ -49,6 +48,10 @@ static struct options parse_options(int argc, char ** argv) {
                     fprintf(stderr, "Unknown option `-%c'.\n", optopt);
                 else
                     fprintf(stderr, "Unknown option character `\\x%x'.\n", optopt);
+                
+                print_help();
+                opts.state = -1;
+                    
                 return opts;
             default:
                 print_help();
@@ -76,9 +79,9 @@ static struct options parse_options(int argc, char ** argv) {
     }
 
     // inode offset is required
-    if (opts.inode_offset == -1) {
+    if (opts.ino == 0) {
         opts.state = -1;
-        fprintf(stderr, "inode_offset param is required!\n");
+        fprintf(stderr, "inode number param is required!\n");
         print_help();
         return opts;
     }
@@ -87,11 +90,15 @@ static struct options parse_options(int argc, char ** argv) {
 }
 
 int main(int argc, char ** argv) {
-    struct options opts = parse_options(argc, argv);
+    struct options opts;
+
+    opts = parse_options(argc, argv);
     if (opts.state < 0)
         return EXIT_FAILURE;
 
-    ext4_undelete_file(opts.device, opts.inode_offset, opts.output_name);
+    if (undelete_file(opts.device, opts.ino, opts.output_name) < 0) {
+        return EXIT_FAILURE;
+    }
 
     return EXIT_SUCCESS;
 }
