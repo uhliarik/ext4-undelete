@@ -2,7 +2,8 @@ app=ext-undelete
 
 OBJ=main.o ext4_undelete.o
 #DEBUG=-D DEBUG
-CFLAGS=-std=c99 -Wextra -Wall -Werror -pedantic -O2 -D_FILE_OFFSET_BITS=64 ${DEBUG}
+CDEFINE=-D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+CFLAGS=-std=c99 -Wextra -Wall -Werror -pedantic -O2 ${CDEFINE} ${DEBUG}
 CC=gcc
 LIB=-lext2fs
 

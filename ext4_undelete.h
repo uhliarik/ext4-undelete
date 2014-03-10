@@ -10,12 +10,13 @@
 
 #include "ext4.h"
 #include "ext4_extents.h"
+#include <stdbool.h>
 
 /** using ext2fs lib */
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
 
-int undelete_file(char *device, ext2_ino_t ino, char *output_name);
+int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip);
 void print_ext2_exhdr_info(struct ext3_extent_header *header);
 void print_ext2_inode(struct ext2_inode * inode);
 

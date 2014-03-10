@@ -6,8 +6,7 @@
 #include "main.h"
 #include "ext4_undelete.h"
 
-
-#define GETOPT_ARGS "hi:o:"
+#define GETOPT_ARGS "hi:o:s"
 
 static void print_help() {
     printf("\nUsage: ./ext4_undel device -i ino [OPTIONS]");
@@ -15,6 +14,7 @@ static void print_help() {
     printf("\n\t-h: print this help");
     printf("\n\t-i ino: specifies inode number, which holds info about file which should be undeleted");
     printf("\n\t-o filename: filename of undeleted file. Default is %s", DEFAULT_FILENAME);
+    printf("\n\t-s: strip trailing zeros in last block. By default, this option is off");
     printf("\n");
 }
 
@@ -26,9 +26,10 @@ static struct options parse_options(int argc, char ** argv) {
         .state = 0,
         .ino = 0,
         .output_name = DEFAULT_FILENAME,
-        .device = NULL
+        .device = NULL,
+        .strip = false
     };
-
+    
     while ((c = getopt(argc, argv, GETOPT_ARGS)) != -1) {
         switch (c) {
             case 'h':
@@ -40,6 +41,9 @@ static struct options parse_options(int argc, char ** argv) {
                 break;
             case 'o':
                 opts.output_name = optarg;
+                break;
+            case 's':
+                opts.strip = true;
                 break;
             case '?':
                 if (optopt == 'c')
@@ -96,7 +100,7 @@ int main(int argc, char ** argv) {
     if (opts.state < 0)
         return EXIT_FAILURE;
 
-    if (undelete_file(opts.device, opts.ino, opts.output_name) < 0) {
+    if (undelete_file(opts.device, opts.ino, opts.output_name, opts.strip) < 0) {
         return EXIT_FAILURE;
     }
 

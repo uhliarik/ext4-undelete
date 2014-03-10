@@ -22,6 +22,74 @@
 
 ext2_filsys current_fs = NULL;
 
+static int count_trailing_zeros(char *data, int bs){
+    for (int i = bs-1; i >= 0; i--){
+        if(data[i])
+            return bs-(i+1);
+    }
+    
+    return 0;
+}
+
+static int read_last_block(int fd, void *buffer, int bs){
+    off_t pos;
+    if ((pos = lseek(fd, 0L, SEEK_END)) < 0)
+        return -1;
+    
+    if (lseek(fd, pos-bs, SEEK_SET) < 0)
+        return -1;
+    
+    if (bs != read(fd, buffer, bs)){
+        return -1;
+    }
+    
+    return 0;
+}
+
+static int strip_trailing_zeros(char *output_name){
+    char * block = NULL;
+    int fd;
+    unsigned int bs = current_fs->blocksize, zeros;
+    off_t pos;
+    
+    block = (char *)malloc(bs);
+    if(block == NULL)
+        return -1;
+    
+    fd = open(output_name, O_RDWR, 0600);
+    if(fd < 0){
+        free(block);
+        return -1;
+    }
+    
+    if (read_last_block(fd, block, bs) < 0){
+        free(block);
+        close(fd);
+        return -1;
+    }
+    
+    zeros = count_trailing_zeros(block, bs);
+    if (zeros){
+        // get file len
+        if ((pos = lseek(fd, 0L, SEEK_END)) < 0){
+            free(block);
+            close(fd);
+            return -1;
+        }
+        
+        // truncate        
+        if(ftruncate(fd, pos-zeros) < 0){
+            free(block);
+            close(fd);
+            return -1;
+        }
+    }
+    
+    close(fd);
+    
+    return 0;
+}
+
 static int check_extent_hdr(struct ext3_extent_header *header){
     D(printf("Checking extent header..."));
     if (header->eh_depth > EXT4_EXT_MAX_DEPTH) {
@@ -275,7 +343,7 @@ static int ext4_undelete_leaf(struct ext_path *path, int out_fd) {
 
 
 static int open_out_file(char *output_name){
-    int fd = open(output_name, O_CREAT | O_RDWR | O_LARGEFILE, 0600);
+    int fd = open(output_name, O_CREAT | O_RDWR, 0600);
     
     return fd;
 }
@@ -400,7 +468,7 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
     return 0;
 }
 
-int undelete_file(char *device, ext2_ino_t ino, char *output_name) {
+int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip) {
     int retval;
     struct ext2_inode * inode_buf;
     int open_flags = EXT2_FLAG_SOFTSUPP_FEATURES;
@@ -438,6 +506,9 @@ int undelete_file(char *device, ext2_ino_t ino, char *output_name) {
     
     // free buffer 
     free(inode_buf);
+    
+    if(strip)
+        strip_trailing_zeros(output_name);
     
     // close filesystem
     D(printf("Closing filesystem...\n"));
