@@ -343,7 +343,7 @@ static int ext4_undelete_leaf(struct ext_path *path, int out_fd) {
 
 
 static int open_out_file(char *output_name){
-    int fd = open(output_name, O_CREAT | O_RDWR, 0600);
+    int fd = open(output_name, O_CREAT | O_RDWR | O_TRUNC, 0600);
     
     return fd;
 }

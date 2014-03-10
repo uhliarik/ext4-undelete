@@ -1,0 +1,17 @@
+Fragmented
+
+Application which will create fragmented file to how many extents you will specify.
+All info about params you will find by executing application: ./fragmented -h.
+
+MAKE: 
+To make this app, just type make. No special libraries are needed.
+
+RUN:
+To run this app, just write ./fragmented and you will get more info typed in app
+help.
+
+EXAMPLE:
+To create file, which consists from 5 extents, file content will be @ and 
+file will be stored in /mnt/data/file, run:
+
+./fragmented /mnt/data/fragmented -c 5 -d 64
