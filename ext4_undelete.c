@@ -70,14 +70,14 @@ static int strip_trailing_zeros(char *output_name){
     
     zeros = count_trailing_zeros(block, bs);
     if (zeros){
-        // get file len
+        /* get file len */
         if ((pos = lseek(fd, 0L, SEEK_END)) < 0){
             free(block);
             close(fd);
             return -1;
         }
         
-        // truncate        
+        /* truncate */      
         if(ftruncate(fd, pos-zeros) < 0){
             free(block);
             close(fd);
@@ -102,7 +102,7 @@ static int check_extent_hdr(struct ext3_extent_header *header){
         return -1;
     }
     
-    // TODO: add other extent checks
+    /* TODO: add other extent checks */
     
     D(printf("OK\n"));
     return 0;
@@ -282,7 +282,7 @@ static int append_undeleted_data(int out_fd, ext4_lblk_t ex_ee_block,
         
         while(bytes_read){
                 if((bytes_written = write(out_fd, ((char *)buffer)+write_off, bytes_read-write_off)) < 0){
-                    // TODO: ERROR
+                    /* TODO: ERROR */
                 }
                 bytes_read -= bytes_written;
                 write_off += bytes_written;
@@ -313,7 +313,7 @@ static int ext4_undelete_leaf(struct ext_path *path, int out_fd) {
         
         print_ext2_exhdr_info(path->p_hdr);
     
-        // if there is value in eh_entries, try to use it!
+        /* if there is value in eh_entries, try to use it! */
         if(!path->p_hdr->eh_entries){
                 D(printf("Restoring eh_entries from eh_generation: %d\n", path->p_hdr->eh_entries));
                 path->p_hdr->eh_entries = ext4_ext_get_entries(path->p_hdr);
@@ -326,7 +326,7 @@ static int ext4_undelete_leaf(struct ext_path *path, int out_fd) {
     ex_ee_len = ext4_ext_get_actual_len(ex);
     pblk = ext4_ext_pblock(ex);
     
-    // process all leafs
+    /* process all leafs */
     while (ex <= EXT_LAST_EXTENT(eh)) {
         D(printf("DATA: Extent starts at block: %lld (len: %d, first block's number: %d). Processing leaf node..\n",  pblk, ex_ee_len, ex_ee_block));
         
@@ -365,7 +365,7 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
         return -1;
     }
     
-    // get depth from eh_generation and check it !!!
+    /* get depth from eh_generation and check it !!! */
     D(printf("Restoring eh_depth from eh_generation: %d\n", depth));
     depth = ext4_ext_get_depth(ext_inode_hdr(inode_buf)); 
     
@@ -391,14 +391,14 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
     
     i = 0;
     while (i >= 0) {
-        // leaf block
+        /* leaf block */
         if (i == depth) {
             D(printf("Processing leaf node..\n"));
 
             err = ext4_undelete_leaf(path + i, out_fd);
             if (err < 0){
                 return -1;
-                // TODO: ERROR
+                /* TODO: ERROR */
             }
             
             block_release(path[i].p_bb);
@@ -409,7 +409,7 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
             continue;
         }
 
-        // index block
+        /* index block */
         if (!path[i].p_hdr) {
             path[i].p_hdr = ext_block_hdr(path[i].p_bb);
             if (check_extent_hdr(ext_inode_hdr(inode_buf))){
@@ -418,15 +418,15 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
         }
 
         if (!path[i].p_idx) {
-            // this level hasn't been touched yet 
+            /* this level hasn't been touched yet */
             path[i].p_idx = EXT_FIRST_INDEX(path[i].p_hdr);
             
-            // if eh_entries is 0, get eh_entries form eh_generation
+            /* if eh_entries is 0, get eh_entries form eh_generation */
             if (!path[i].p_hdr->eh_entries){
                 path[i].p_hdr->eh_entries = ext4_ext_get_entries(path[i].p_hdr);
             }
         } else {
-            // we were already here, see at next index 
+            /* we were already here, see at next index */
             path[i].p_idx++;
         }
 
@@ -434,26 +434,26 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
             struct block_buffer *bb = NULL;
             D(printf("Reading block: %lld, index: %d\n", ext_idx_pblock(path[i].p_idx), i));
             
-            // go to the next level 
+            /* go to the next level */
             memset(path + i + 1, 0, sizeof (*path));
             
             bb = read_block(ext_idx_pblock(path[i].p_idx));
             if(bb == NULL){
                 fprintf(stderr, "ERROR\n");
                 return -1;
-                // TODO: ERROR
+                /* TODO: ERROR */
             }
             
             if (i + 1 > depth) {
                 fprintf(stderr, "ERROR\n");
                 return -1;
-                // TODO: ERROR
+                /* TODO: ERROR */
             }
             path[i + 1].p_bb = bb;
 
             i++;
         } else {
-            // root level has p_bb == NULL, block_release() eats this 
+            /* root level has p_bb == NULL, block_release() eats this */
             block_release(path[i].p_bb);
             path[i].p_bb = NULL;
             i--;
@@ -473,7 +473,7 @@ int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip) {
     struct ext2_inode * inode_buf;
     int open_flags = EXT2_FLAG_SOFTSUPP_FEATURES;
     
-    // open filesystem first
+    /* open filesystem first */
     D(printf("Opening filesystem...\n"));
     retval = open_filesystem(device, open_flags, 0, 0);
     if (retval) {
@@ -489,7 +489,7 @@ int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip) {
 	return -1;
     }
     
-    // try to read inode data
+    /* try to read inode data */
     D(printf("Trying to read inode: %d...\n", ino));
     if (read_inode_full(ino, inode_buf, 
             EXT2_INODE_SIZE(current_fs->super))) {
@@ -498,19 +498,29 @@ int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip) {
           return -1;
     }    
     
-    // undelete file
-    if (ext4_undelete_file(inode_buf, output_name) != 0) {
-        fprintf(stderr, "Error: unable to undelete file!\n");
+    /* check, if the file still exists */
+    if (inode_buf->i_links_count){
+        fprintf(stderr, "Error: Can't undelete file (file exists)!\n");
+        free(inode_buf);
+        close_filesystem();
         return -1;
     }
     
-    // free buffer 
+    /* undelete file */
+    if (ext4_undelete_file(inode_buf, output_name) != 0) {
+        fprintf(stderr, "Error: unable to undelete file!\n");
+        free(inode_buf);
+        close_filesystem();
+        return -1;
+    }
+    
+    /* free buffer */
     free(inode_buf);
     
     if(strip)
         strip_trailing_zeros(output_name);
     
-    // close filesystem
+    /* close filesystem */
     D(printf("Closing filesystem...\n"));
     if(close_filesystem() < 0){
         return -1;
