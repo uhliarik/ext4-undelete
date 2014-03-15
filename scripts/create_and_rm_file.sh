@@ -1,7 +1,7 @@
 #!/bin/bash
 FILE="fragmented_file"
 BLOCKS_COUNT=5
-DATA="64"
+DATA="0"
 CONFIG="config.cfg"
 FRAGMENTED_BIN="./fragmented/fragmented"
 INODE="0"
@@ -92,6 +92,5 @@ umount "$dev" || {
 
 echo "$INODE"
 echo "$MD5SUM"
-
 
 exit 0

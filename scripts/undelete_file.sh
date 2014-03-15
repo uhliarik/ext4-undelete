@@ -36,10 +36,14 @@ echo "Undeleting inode no.: $INODE"
 echo "MD5SUM of delete file is: $MD5SUM"
 
 if [[ -z "$INODE" ]] ; then
-    error "Environment variable INODE is not set!"
+    error "Variable INODE is not set!"
 fi
 
-$UNDELETE_BIN $dev -i $INODE -o $OUTPUT || {
+if [[ -z "$MD5SUM" ]] ; then
+    error "Variable MD5SUM is not set!"
+fi
+
+$UNDELETE_BIN $dev -i $INODE -o $OUTPUT > /dev/null || {
     error "Unable to undelete file!"
 }
 
@@ -48,6 +52,8 @@ MD5SUM_UNDEL="$(md5sum $OUTPUT |cut -f1 -d' ')"
 
 if [[ "$MD5SUM" != "$MD5SUM_UNDEL" ]] ; then
     error "MD5SUMS of deleted and undeleted file are different!"
+else 
+    echo "Undelete was successfull. MD5 sums are equal."
 fi
 
 exit 0

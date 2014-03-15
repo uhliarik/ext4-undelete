@@ -33,3 +33,8 @@ different filename, specify it by -o option.
 ATTENTION:
 Please make sure, before using ext-undelete, unmount partition
 from which you want to undelete file.
+
+TESTS:
+Scripts for testing undelete are under scripts folder. Please
+read README file in scripts folder to learn, how to execute
+scripts.

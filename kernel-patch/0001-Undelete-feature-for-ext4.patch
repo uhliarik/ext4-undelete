@@ -1,11 +1,9 @@
-Kernel patch, which will enable undelete feature for 
-deleted files.
 
 Signed-off-by: Lubos Uhliarik <uhliarik@seznam.cz>
 ---
- fs/ext4/ext4_extents.h | 14 ++++++++++
- fs/ext4/extents.c      | 69 +++++++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 77 insertions(+), 6 deletions(-)
+ fs/ext4/ext4_extents.h | 14 +++++++++++
+ fs/ext4/extents.c      | 67 +++++++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 75 insertions(+), 6 deletions(-)
 
 diff --git a/fs/ext4/ext4_extents.h b/fs/ext4/ext4_extents.h
 index 5074fe2..22cf2cd 100644
@@ -33,7 +31,7 @@ index 5074fe2..22cf2cd 100644
   * ext4_idx_store_pblock:
   * stores a large physical block number into an index struct,
 diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 74bc2d5..f6b38a6 100644
+index 74bc2d5..f0f3615 100644
 --- a/fs/ext4/extents.c
 +++ b/fs/ext4/extents.c
 @@ -2565,6 +2565,7 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
@@ -95,12 +93,10 @@ index 74bc2d5..f6b38a6 100644
  	long long partial_cluster = 0;
  	handle_t *handle;
  	int i = 0, err = 0;
-@@ -2864,6 +2876,20 @@ again:
+@@ -2864,6 +2876,18 @@ again:
  	}
  	err = 0;
  
-+	/* if whole file is deleted, store entries
-+	 * of each level to entries_path */
 +	if (!inode->i_nlink) {
 +		entries_path = kzalloc(sizeof(short) * (depth + 1),
 +				       GFP_NOFS);
@@ -116,7 +112,7 @@ index 74bc2d5..f6b38a6 100644
  	while (i >= 0 && err == 0) {
  		if (i == depth) {
  			/* this is leaf block */
-@@ -2890,6 +2916,10 @@ again:
+@@ -2890,6 +2914,10 @@ again:
  			ext_debug("init index ptr: hdr 0x%p, num %d\n",
  				  path[i].p_hdr,
  				  le16_to_cpu(path[i].p_hdr->eh_entries));
@@ -127,7 +123,7 @@ index 74bc2d5..f6b38a6 100644
  		} else {
  			/* we were already here, see at next index */
  			path[i].p_idx--;
-@@ -2928,10 +2958,24 @@ again:
+@@ -2928,10 +2956,24 @@ again:
  		} else {
  			/* we finished processing this index, go up */
  			if (path[i].p_hdr->eh_entries == 0 && i > 0) {
@@ -153,7 +149,7 @@ index 74bc2d5..f6b38a6 100644
  			}
  			/* root level has p_bh == NULL, brelse() eats this */
  			brelse(path[i].p_bh);
-@@ -2964,6 +3008,17 @@ again:
+@@ -2964,6 +3006,17 @@ again:
  		 */
  		err = ext4_ext_get_access(handle, inode, path);
  		if (err == 0) {
@@ -171,7 +167,7 @@ index 74bc2d5..f6b38a6 100644
  			ext_inode_hdr(inode)->eh_depth = 0;
  			ext_inode_hdr(inode)->eh_max =
  				cpu_to_le16(ext4_ext_space_root(inode, 0));
-@@ -2973,6 +3028,8 @@ again:
+@@ -2973,6 +3026,8 @@ again:
  out:
  	ext4_ext_drop_refs(path);
  	kfree(path);
