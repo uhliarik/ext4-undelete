@@ -1,7 +1,7 @@
 #!/bin/bash
 FILE="fragmented_file"
 BLOCKS_COUNT=5
-DATA="0"
+DATA="1"
 CONFIG="config.cfg"
 FRAGMENTED_BIN="./fragmented/fragmented"
 INODE="0"
@@ -42,10 +42,6 @@ function test_config_vars {
         }
     fi
 }
-
-# unset exported variables
-unset INODE
-unset MD5SUM
 
 # read config and test variables
 source "$CONFIG" || {

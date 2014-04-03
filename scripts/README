@@ -1,0 +1,11 @@
+In this directory, you can find scripts for testing ext4 undelete
+feature. 
+
+Firstly, please set configuration in config.cfg file.
+
+For power failure tests, please run ./power_failure_tests.sh as root user. 
+This script will create generated.out file with log of generated files. You 
+can use this log to see, which values were used to generate which file. These
+values will help you to debug undelete process (you will be enable to recreate
+deleted file with fragmented script and then you can compare this file with
+undeleted one. 
