@@ -12,6 +12,7 @@ struct options {
 	ext2_ino_t ino;
 	char * device;
 	char * output_name;
+        char * original_name;
         bool strip;
 };
 

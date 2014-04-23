@@ -30,6 +30,12 @@ different filename, specify it by -o option.
 
 ./ext-undelete /dev/sda2 -i 12 -s /tmp/hello.txt
 
+You can also undelete file by its filename, but file's parent
+dictionary must exist! (file named hello.txt was created in 
+root of /dev/sda2)
+
+./ext-undelete /dev/sda2 -n /hello.txt -s /tmp/hello.txt
+
 ATTENTION:
 Please make sure, before using ext-undelete, unmount partition
 from which you want to undelete file.

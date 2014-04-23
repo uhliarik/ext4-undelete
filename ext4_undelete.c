@@ -14,6 +14,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+#include <libgen.h>
 #include "ext4_undelete.h"
 #include "debug.h"
 #include "ext4_extents.h"
@@ -21,6 +22,61 @@
 #include <ext2fs/ext3_extents.h>
 
 ext2_filsys current_fs = NULL;
+
+static int list_dir_proc(ext2_ino_t dir EXT2FS_ATTR((unused)),
+			 int	entry,
+			 struct ext2_dir_entry *dirent,
+			 int	offset EXT2FS_ATTR((unused)),
+			 int	blocksize EXT2FS_ATTR((unused)),
+			 char	*buf EXT2FS_ATTR((unused)),
+			 void	*private)
+{
+	char			name[EXT2_NAME_LEN + 1];
+	int			thislen;
+        struct list_dir_struct  *ls;
+        
+        ls = (struct list_dir_struct *)private;
+	thislen = dirent->name_len & 0xFF;
+	strncpy(name, dirent->name, thislen);
+	name[thislen] = '\0';
+	
+        if((!ls) || (ls->original_name == NULL)){
+            fprintf(stderr, "Error: pointer error in list_dir_proc\n");
+            return 0;
+        }
+
+	if (entry == DIRENT_DELETED_FILE) {
+            if(strcmp(name, ls->original_name) == 0){
+                ls->ino = dirent->inode;
+            }
+        }
+
+        return 0;
+}
+
+ext2_ino_t get_ino_deleted_file(char *original_name){
+        ext2_ino_t inode, cwd = EXT2_ROOT_INO, root = EXT2_ROOT_INO;
+        struct list_dir_struct ls;
+        char * dir_name = strdup(original_name);
+        int flags;
+        
+        original_name = basename(original_name);
+        
+        /** get directory inode */
+        int retval = ext2fs_namei(current_fs, root, cwd, dirname(dir_name), &inode);
+        if (retval) {
+                return 0;
+        }
+        
+        flags = DIRENT_FLAG_INCLUDE_EMPTY | DIRENT_FLAG_INCLUDE_REMOVED;
+        ls.ino = 0;
+        ls.original_name = original_name;
+        
+        retval = ext2fs_dir_iterate2(current_fs, inode, flags, 
+                0, list_dir_proc, &ls);
+        
+        return ls.ino;
+}
 
 static int count_trailing_zeros(char *data, int bs){
     for (int i = bs-1; i >= 0; i--){
@@ -468,7 +524,7 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
     return 0;
 }
 
-int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip) {
+int undelete_file(char *device, char *original_name, ext2_ino_t ino, char *output_name, bool strip) {
     int retval;
     struct ext2_inode * inode_buf;
     int open_flags = EXT2_FLAG_SOFTSUPP_FEATURES;
@@ -478,6 +534,16 @@ int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip) {
     retval = open_filesystem(device, open_flags, 0, 0);
     if (retval) {
           return -1;
+    }
+    
+    // if original filename is specified
+    if (original_name != NULL){
+        ino = get_ino_deleted_file(original_name);
+        if (ino == 0){
+            fprintf(stderr, "Error: can't find inode number of specified "
+                    "original filename: \"%s\"\n", original_name);
+            return -1;
+        }
     }
     
     inode_buf = (struct ext2_inode *)
@@ -501,6 +567,15 @@ int undelete_file(char *device, ext2_ino_t ino, char *output_name, bool strip) {
     /* check, if the file still exists */
     if (inode_buf->i_links_count){
         fprintf(stderr, "Error: Can't undelete file (file exists)!\n");
+        free(inode_buf);
+        close_filesystem();
+        return -1;
+    }
+    
+    /* check, if the file is regular file */
+    if (!LINUX_S_ISREG(inode_buf->i_mode)){
+        fprintf(stderr, "Error: Can't undelete file (deleted file is "
+                "not regular file)!\n");
         free(inode_buf);
         close_filesystem();
         return -1;

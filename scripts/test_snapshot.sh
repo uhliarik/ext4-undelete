@@ -1,7 +1,7 @@
 #!/bin/bash
 POWER_FAILURE_SCRIPT="./power_failure.sh"
 CONFIG="config.cfg"
-TEST_ITERATIONS=10000
+TEST_ITERATIONS=20
 
 function error {
     local text="$1"
