@@ -28,13 +28,13 @@ File is going to be stored in out.undeleted file in the
 same directory, as you executed this app. If you wanna select 
 different filename, specify it by -o option.
 
-./ext-undelete /dev/sda2 -i 12 -s /tmp/hello.txt
+./ext-undelete /dev/sda2 -i 12 -s -o /tmp/hello.txt
 
 You can also undelete file by its filename, but file's parent
 dictionary must exist! (file named hello.txt was created in 
 root of /dev/sda2)
 
-./ext-undelete /dev/sda2 -n /hello.txt -s /tmp/hello.txt
+./ext-undelete /dev/sda2 -n /hello.txt -s -o /tmp/hello.txt
 
 ATTENTION:
 Please make sure, before using ext-undelete, unmount partition
