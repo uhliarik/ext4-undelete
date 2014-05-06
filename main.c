@@ -9,7 +9,7 @@
 #define GETOPT_ARGS "hi:n:o:s"
 
 static void print_help() {
-    printf("\nUsage: ./ext4_undel device -i ino [OPTIONS]");
+    printf("\nUsage: ./ext4_undelete device -i ino [OPTIONS]");
     printf("\n\nOptions:");
     printf("\n\t-h: print this help");
     printf("\n\t-i ino: specifies inode number, which holds info about file which should be undeleted");
@@ -95,7 +95,7 @@ static struct options parse_options(int argc, char ** argv) {
         print_help();
         return opts;
     }
-    
+
     // if inode number and original filename is specified at the same time
     if ((opts.ino != 0) && (opts.original_name != NULL)){
         opts.state = -1;

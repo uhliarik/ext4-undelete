@@ -1,4 +1,4 @@
-app=ext-undelete
+app=ext4-undelete
 
 OBJ=main.o ext4_undelete.o
 #DEBUG=-D DEBUG

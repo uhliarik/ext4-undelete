@@ -1,4 +1,3 @@
-
 Signed-off-by: Lubos Uhliarik <uhliarik@seznam.cz>
 ---
  fs/ext4/ext4_extents.h | 14 +++++++++++
@@ -31,7 +30,7 @@ index 5074fe2..22cf2cd 100644
   * ext4_idx_store_pblock:
   * stores a large physical block number into an index struct,
 diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
-index 74bc2d5..f0f3615 100644
+index 74bc2d5..a3eba54 100644
 --- a/fs/ext4/extents.c
 +++ b/fs/ext4/extents.c
 @@ -2565,6 +2565,7 @@ ext4_ext_rm_leaf(handle_t *handle, struct inode *inode,
@@ -98,7 +97,7 @@ index 74bc2d5..f0f3615 100644
  	err = 0;
  
 +	if (!inode->i_nlink) {
-+		entries_path = kzalloc(sizeof(short) * (depth + 1),
++		entries_path = kzalloc(sizeof(unsigned short) * (depth + 1),
 +				       GFP_NOFS);
 +		if (entries_path == NULL) {
 +			kfree(path);
