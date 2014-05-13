@@ -24,10 +24,6 @@
 #include <ext2fs/ext2fs.h>
 #include <ext2fs/ext3_extents.h>
 
-
-//#include "ext4.h"
-//#include <linux/byteorder/little_endian.h>
-
 #define EXT4_EXT_MAX_DEPTH 5
 
 struct block_buffer {

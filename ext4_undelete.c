@@ -236,7 +236,7 @@ errout:
     if (retval)
         fprintf(stderr, "Error: while trying to close filesystem\n");
     current_fs = NULL;
-    
+
     return -1;
 }
 
@@ -265,20 +265,20 @@ static struct block_buffer *read_block(ext4_fsblk_t pblk){
         fprintf(stderr, "Error: unable to allocate enough memory!\n");
         return NULL;
     }
-    
+
     bb->data = malloc(current_fs->blocksize);
     if(bb->data == NULL){
         free(bb);
         fprintf(stderr, "Error: unable to allocate enough memory!\n");
         return NULL;
     }
-    
+
     if (io_channel_read_blk64(current_fs->io, pblk, 1, bb->data)) {
         block_release(bb);
         fprintf(stderr, "Error: unable to read block from device!\n");
         return NULL;
     }
-    
+
     return bb;
 }
 
@@ -318,7 +318,7 @@ static int append_undeleted_data(int out_fd, ext4_lblk_t ex_ee_block,
     D(printf("Entering append_undeleted_data function \n"));
     
     if(lseek(out_fd, out_offset, SEEK_SET) < 0){
-        fprintf(stderr, "Error: unable to seek to position: %lld\n", out_offset);
+        fprintf(stderr, "Error: unable to seek to position: %ld\n", out_offset);
         return -1;
     }
     
@@ -338,7 +338,9 @@ static int append_undeleted_data(int out_fd, ext4_lblk_t ex_ee_block,
         
         while(bytes_read){
                 if((bytes_written = write(out_fd, ((char *)buffer)+write_off, bytes_read-write_off)) < 0){
-                    /* TODO: ERROR */
+                    fprintf(stderr, "Error: unable to write data!\n");
+                    free(buffer);
+                    return -1;
                 }
                 bytes_read -= bytes_written;
                 write_off += bytes_written;
@@ -360,15 +362,15 @@ static int ext4_undelete_leaf(struct ext_path *path, int out_fd) {
     ext4_fsblk_t pblk;
     unsigned short ex_ee_len;
     struct ext3_extent_header *eh;
-    
+
     if (!path->p_hdr){
         path->p_hdr = ext_block_hdr(path->p_bb);
         if (check_extent_hdr(path->p_hdr)){
                 return -1;
         }
-        
-        print_ext2_exhdr_info(path->p_hdr);
-    
+
+        D(print_ext2_exhdr_info(path->p_hdr));
+
         /* if there is value in eh_entries, try to use it! */
         if(!path->p_hdr->eh_entries){
                 D(printf("Restoring eh_entries from eh_generation: %d\n", path->p_hdr->eh_entries));
@@ -413,18 +415,18 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
     struct ext_path *path = NULL;
     int depth = 0;
     int out_fd, err, i = 0;
-    
-    print_ext2_inode(inode_buf);
-    print_ext2_exhdr_info(ext_inode_hdr(inode_buf));
-    
+
+    D(print_ext2_inode(inode_buf));
+    D(print_ext2_exhdr_info(ext_inode_hdr(inode_buf)));
+
     if (check_extent_hdr(ext_inode_hdr(inode_buf))){
         return -1;
     }
-    
+
     /* get depth from eh_generation and check it !!! */
     D(printf("Restoring eh_depth from eh_generation: %d\n", depth));
     depth = ext4_ext_get_depth(ext_inode_hdr(inode_buf)); 
-    
+
     path = calloc(depth + 1, sizeof (struct ext_path));
     if (path == NULL) {
         fprintf(stderr, "Error: can't allocate enough memory!\n");
@@ -441,10 +443,10 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
         fprintf(stderr, "Error: can't write to output file: %s!\n", output_name);
         if (path != NULL)
                 free(path);
-        
+
         return -1;
     }
-    
+
     i = 0;
     while (i >= 0) {
         /* leaf block */
@@ -454,12 +456,11 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
             err = ext4_undelete_leaf(path + i, out_fd);
             if (err < 0){
                 return -1;
-                /* TODO: ERROR */
             }
-            
+
             block_release(path[i].p_bb);
             path[i].p_bb = NULL;
-            
+
             i--;
 
             continue;
@@ -476,7 +477,7 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
         if (!path[i].p_idx) {
             /* this level hasn't been touched yet */
             path[i].p_idx = EXT_FIRST_INDEX(path[i].p_hdr);
-            
+
             /* if eh_entries is 0, get eh_entries form eh_generation */
             if (!path[i].p_hdr->eh_entries){
                 path[i].p_hdr->eh_entries = ext4_ext_get_entries(path[i].p_hdr);
@@ -489,21 +490,19 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
         if (ext4_ext_more_to_iterate(path + i)) {
             struct block_buffer *bb = NULL;
             D(printf("Reading block: %lld, index: %d\n", ext_idx_pblock(path[i].p_idx), i));
-            
+
             /* go to the next level */
             memset(path + i + 1, 0, sizeof (*path));
-            
+
             bb = read_block(ext_idx_pblock(path[i].p_idx));
             if(bb == NULL){
                 fprintf(stderr, "ERROR\n");
                 return -1;
-                /* TODO: ERROR */
             }
-            
+
             if (i + 1 > depth) {
                 fprintf(stderr, "ERROR\n");
                 return -1;
-                /* TODO: ERROR */
             }
             path[i + 1].p_bb = bb;
 
@@ -515,12 +514,12 @@ int ext4_undelete_file(struct ext2_inode * inode_buf, char *output_name) {
             i--;
         }
     }
-    
+
     if (path != NULL)
         free(path);
-    
+
     close_out_file(out_fd);
-    
+
     return 0;
 }
 
@@ -528,14 +527,14 @@ int undelete_file(char *device, char *original_name, ext2_ino_t ino, char *outpu
     int retval;
     struct ext2_inode * inode_buf;
     int open_flags = EXT2_FLAG_SOFTSUPP_FEATURES;
-    
+
     /* open filesystem first */
     D(printf("Opening filesystem...\n"));
     retval = open_filesystem(device, open_flags, 0, 0);
     if (retval) {
           return -1;
     }
-    
+
     // if original filename is specified
     if (original_name != NULL){
         ino = get_ino_deleted_file(original_name);
@@ -545,16 +544,16 @@ int undelete_file(char *device, char *original_name, ext2_ino_t ino, char *outpu
             return -1;
         }
     }
-    
+
     inode_buf = (struct ext2_inode *)
-        		malloc(EXT2_INODE_SIZE(current_fs->super));
-        
+                     malloc(EXT2_INODE_SIZE(current_fs->super));
+
     if (!inode_buf) {
-	fprintf(stderr, "Error: can't allocate buffer for ext2_inode\n");
+        fprintf(stderr, "Error: can't allocate buffer for ext2_inode\n");
         close_filesystem();
-	return -1;
+        return -1;
     }
-    
+
     /* try to read inode data */
     D(printf("Trying to read inode: %d...\n", ino));
     if (read_inode_full(ino, inode_buf, 
@@ -562,8 +561,8 @@ int undelete_file(char *device, char *original_name, ext2_ino_t ino, char *outpu
           free(inode_buf);
           close_filesystem();
           return -1;
-    }    
-    
+    }
+
     /* check, if the file still exists */
     if (inode_buf->i_links_count){
         fprintf(stderr, "Error: Can't undelete file (file exists)!\n");
@@ -571,7 +570,7 @@ int undelete_file(char *device, char *original_name, ext2_ino_t ino, char *outpu
         close_filesystem();
         return -1;
     }
-    
+
     /* check, if the file is regular file */
     if (!LINUX_S_ISREG(inode_buf->i_mode)){
         fprintf(stderr, "Error: Can't undelete file (deleted file is "
@@ -580,7 +579,7 @@ int undelete_file(char *device, char *original_name, ext2_ino_t ino, char *outpu
         close_filesystem();
         return -1;
     }
-    
+
     /* undelete file */
     if (ext4_undelete_file(inode_buf, output_name) != 0) {
         fprintf(stderr, "Error: unable to undelete file!\n");
@@ -588,13 +587,13 @@ int undelete_file(char *device, char *original_name, ext2_ino_t ino, char *outpu
         close_filesystem();
         return -1;
     }
-    
+
     /* free buffer */
     free(inode_buf);
-    
+
     if(strip)
         strip_trailing_zeros(output_name);
-    
+
     /* close filesystem */
     D(printf("Closing filesystem...\n"));
     if(close_filesystem() < 0){
