@@ -349,6 +349,7 @@ static int append_undeleted_data(int out_fd, ext4_lblk_t ex_ee_block,
         bytes_to_transfer -= write_off;
         bytes_read = bytes_written = 0;
         write_off = 0;
+	pblk++;
     }
     
     free(buffer);
